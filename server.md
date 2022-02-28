@@ -142,6 +142,11 @@ systemctl restart docker
 sudo kubeadm init
 ```
 
+I run into a problem that all pods are always in ready state. solution was:
+```
+for node in $(kubectl get nodes --selector='node-role.kubernetes.io/master' | awk 'NR>1 {print $1}' ) ; do   kubectl taint node $node node-role.kubernetes.io/master- ; done
+```
+
 ### Kafka
 ```
 wget https://dlcdn.apache.org/kafka/3.1.0/kafka_2.12-3.1.0.tgz
@@ -157,6 +162,32 @@ sudo chown -R kafka:kafka /tmp/zookeeper/
 ```
 Edit file `sudo vim /opt/kafka/config/server.properties`:
 * `listeners=PLAINTEXT://localhost:9092`
+
+Create cni:
+
+`sudo vim /etc/cni/net.d/10-flannel.conflist`:
+
+```
+{
+  "name": "cbr0",
+  "plugins": [
+    {
+      "type": "flannel",
+      "delegate": {
+        "hairpinMode": true,
+        "isDefaultGateway": true
+      }
+    },
+    {
+      "type": "portmap",
+      "capabilities": {
+        "portMappings": true
+      }
+    }
+   ]
+}
+
+```
 
 #### Configure Kafka as a service
 * Create file `/etc/systemd/system/zookeeper.service`
