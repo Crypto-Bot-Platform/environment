@@ -425,6 +425,80 @@ sudo firewall-cmd --add-port=3000/tcp --permanent
 sudo firewall-cmd --reload
 ```
 
+### Timescale DB 
+https://docs.timescale.com/install/latest/self-hosted/installation-redhat/#install-self-hosted-timescaledb-on-red-hat-based-systems
+#### Install PostgreSQL
+```
+sudo dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+sudo dnf -qy module disable postgresql
+sudo dnf install -y postgresql14-server
+sudo /usr/pgsql-14/bin/postgresql-14-setup initdb
+sudo systemctl enable postgresql-14
+sudo systemctl start postgresql-14
+```
+Edit config file
+`sudo vim /var/lib/pgsql/14/data/pg_hba.conf`
+```
+# "local" is for Unix domain socket connections only
+local   all             all                                     ident
+# IPv4 local connections:
+host    all             all             0.0.0.0/0               md5
+# IPv6 local connections:
+host    all             all             ::1/128                 ident
+host    all             all             10.0.0.212/32           trust
+```
+Edit file 
+`vim /var/lib/pgsql/14/data/postgresql.conf`
+```
+listen_addresses = '*'
+```
+Edit location of data file
+
+`mv /var/lib/pgsql/14/data/ /home/postgres`
+
+`sudo vim /usr/lib/systemd/system/postgresql-14.service`
+```
+# Location of database directory
+Environment=PGDATA=/home/postgres/data
+```
+```
+sudo systemctl daemon-reload
+sudo systemctl restart postgresql-14
+```
+
+#### Install Timescale DB 
+```
+sudo dnf install https://download.postgresql.org/pub/repos/yum/reporpms/EL-$(rpm -E %{rhel})-x86_64/pgdg-redhat-repo-latest.noarch.rpm 
+```
+
+Update file
+```
+sudo tee /etc/yum.repos.d/timescale_timescaledb.repo <<EOL
+[timescale_timescaledb]
+name=timescale_timescaledb
+baseurl=https://packagecloud.io/timescale/timescaledb/el/$(rpm -E %{rhel})/\$basearch
+repo_gpgcheck=1
+gpgcheck=0
+enabled=1
+gpgkey=https://packagecloud.io/timescale/timescaledb/gpgkey
+sslverify=1
+sslcacert=/etc/pki/tls/certs/ca-bundle.crt
+metadata_expire=300
+EOL
+```
+```
+sudo dnf update
+sudo dnf install timescaledb-2-postgresql-14
+```
+
+#### Configure:
+```
+sudo -u postgres psql
+postgres=# create database cbp;
+postgres=# create user cbp_user with encrypted password 'Password1234';
+postgres=# grant all privileges on database cbp to cbp_user;
+postgres=# CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+```
 
 
 
