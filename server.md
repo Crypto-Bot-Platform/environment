@@ -161,7 +161,7 @@ sudo chown -R kafka:kafka /tmp/kafka-logs/
 sudo chown -R kafka:kafka /tmp/zookeeper/
 ```
 Edit file `sudo vim /opt/kafka/config/server.properties`:
-* `listeners=PLAINTEXT://localhost:9092`
+* `listeners=PLAINTEXT://:9092`
 
 Create cni:
 
